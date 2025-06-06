@@ -2,7 +2,7 @@ import styled from 'styled-components';
 export function Productos() {
   return (
     <Container>
-      <h1>Cambio texto prueba</h1>
+      <h1>Cambio texto prueba 2</h1>
     </Container>
   );
 }
