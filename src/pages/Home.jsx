@@ -13,7 +13,8 @@ export function Home() {
       marca: "Siglo de Oro",
       presentacion: "bt x 900 ml",
       precio: "S/ 5.90",
-      imagen: "https://alberdisa.vteximg.com.br/arquivos/ids/178889-600-600/siglo-de-oro.png?v=638549163513100000",
+      imagen:
+        "https://alberdisa.vteximg.com.br/arquivos/ids/178889-600-600/siglo-de-oro.png?v=638549163513100000",
       colorFondo: "#F1C40F", // Amarillo
     },
     {
@@ -24,7 +25,8 @@ export function Home() {
       presentacion: "pq x 100 gr",
       precio: "S/ 1.80",
       precioExtra: "c/u",
-      imagen: "https://www.lafabril.com.ec/wp-content/uploads/2020/10/JollyKV-Almendra-430x540px.png",
+      imagen:
+        "https://www.lafabril.com.ec/wp-content/uploads/2020/10/JollyKV-Almendra-430x540px.png",
       colorFondo: "#1ABC9C", // Verde agua
     },
     {
@@ -34,7 +36,8 @@ export function Home() {
       submarca: "HIT",
       presentacion: "bl x 300 gr",
       precio: "S/ 1.70",
-      imagen: "https://res.cloudinary.com/riqra/image/upload/v1715796246/sellers/aje-peru/products/mjtnwupjokclf1t8rdee.png",
+      imagen:
+        "https://res.cloudinary.com/riqra/image/upload/v1715796246/sellers/aje-peru/products/mjtnwupjokclf1t8rdee.png",
       colorFondo: "#3498DB", // Azul
     },
     {
@@ -43,7 +46,8 @@ export function Home() {
       marca: "EL GRANELITO",
       presentacion: "bl x 650 gr",
       precio: "S/ 2.60",
-      imagen: "https://mundoabarrotes.com/wp-content/uploads/2019/09/Azucar-rubia-Dulce-Olmos-50-kg.webp",
+      imagen:
+        "https://mundoabarrotes.com/wp-content/uploads/2019/09/Azucar-rubia-Dulce-Olmos-50-kg.webp",
       colorFondo: "#2ECC71", // Verde
     },
     // Productos adicionales para el carrusel
@@ -53,7 +57,8 @@ export function Home() {
       marca: "COSTEÑO",
       presentacion: "bl x 750 gr",
       precio: "S/ 3.50",
-      imagen: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRi9YEzlTaDTRJ-aEvesaAx9ShkcUxNJluctg&s",
+      imagen:
+        "https://costenoalimentos.com.pe/media/1960/csefXAK0hpQDY0i5H7h43k4YxlaMvUkrSCoYW7fa.png",
       colorFondo: "#E74C3C", // Rojo
     },
     {
@@ -62,12 +67,43 @@ export function Home() {
       marca: "GLORIA",
       presentacion: "lt x 400 ml",
       precio: "S/ 4.20",
-      imagen: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTxjaTRyRmHS3LWQ1a5phx9FTGL3i6LkU9HUw&s",
+      imagen:
+        "https://peruvianboxofficial.com/cdn/shop/files/C415FED4-9AD8-4E6D-BADC-648AABFE111F.png?v=1705628491",
       colorFondo: "#9B59B6", // Morado
+    },
+        {
+      id: 7,
+      nombre: "Trocitos de Atun",
+      marca: "FLORIDA",
+      presentacion: "la x 140 gr",
+      precio: "S/ 4.90",
+      imagen:
+        "https://labodega.com.pe/Adminbackend/fotos/producto12223.jpg",
+      colorFondo: "#9bc9fd", // Morado
+    },
+        {
+      id: 8,
+      nombre: "Lenteja bebé",
+      marca: "EL GRANELITO",
+      presentacion: "bl x 400 gr",
+      precio: "S/ 4.10",
+      precioExtra: "c/u",
+      imagen:
+        "https://maxiahorro.com.pe/wp-content/uploads/2024/12/MERKAT_LENTEJA-500GR.png",
+      colorFondo: "#befdcc", // Morado
     },
   ];
   // Hook para controlar el carrusel
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => Math.max(prev - 1, 0));
+  };
+
+  const nextSlide = () => {
+    const maxPages = Math.ceil(productos.length / 4) - 1;
+    setCurrentIndex((prev) => Math.min(prev + 1, maxPages));
+  };
 
   return (
     <Container>
@@ -90,65 +126,99 @@ export function Home() {
           </div>
         </div>
       </div>
-      {/* ========== SECCIÓN 2: NUEVA SECCIÓN DE PRODUCTOS ========== */}
+      {/* ========== SECCIÓN DE PRODUCTOS: PRECIOS MÁS MASS ========== */}
       <div className="productos-section">
-        {/* Titulo de la seccion */}
+        {/* Título */}
         <div className="titulo-productos">
-          <h2>Nuestros productos</h2>
+          <h2>PRECIOS MÁS BAJOS</h2>
         </div>
-        {/* Contenedor del carrusel */}
+
+        {/* Carrusel */}
         <div className="carrusel-container">
-          {/* flecha izquierda */}
-          <button className="flecha-nav flecha-izq">◀</button>
-          {/* Productos del carrusel */}
+          {/* Botón izquierda */}
+          <button className="flecha-nav flecha-izq" onClick={prevSlide}>
+            ◀
+          </button>
+
+          {/* Wrapper y slider */}
           <div className="productos-wrapper">
-            {productos.slice(0, 4).map((producto) => (
-              <div className="producto-card" key={producto.id}>
-                {/* Circulo color de imageb */}
-                <div
-                  className="producto-circulo"
-                  style={{ backgroundColor: producto.colorFondo }}
-                >
-                  {/* Imagen del producto */}
-                  <img src={producto.imagen} alt={producto.nombre} />
-                </div>
-                {/* Informacion del producto */}
-                <div className="producto-info">
-                  <h3 className="producto-nombre">{producto.nombre}</h3>
-                  <p className="producto-marca">{producto.marca}</p>
-                  {producto.submarca && (
-                    <p className="producto-submarca">{producto.submarca}</p>
-                  )}
-                  <p className="producto-presentacion">
-                    {producto.presentacion}
-                  </p>
-                  {producto.precioExtra && (
-                    <p className="producto-extra">{producto.precioExtra}</p>
-                  )}
-                </div>
-                {/* Boton de comprar */}
-                <button className="producto-precio-btn">
-                  {producto.precio}
-                </button>
-              </div>
-            ))}
+            <div
+              className="productos-slider"
+              style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            >
+              {/* Páginas de productos (grupos de 4) */}
+              {Array.from({ length: Math.ceil(productos.length / 4) }).map(
+                (_, pageIndex) => (
+                  <div className="productos-page" key={pageIndex}>
+                    {productos
+                      .slice(pageIndex * 4, pageIndex * 4 + 4)
+                      .map((producto) => (
+                        <div className="producto-card" key={producto.id}>
+                          {/* Imagen con fondo */}
+                          <div
+                            className="producto-circulo"
+                            style={{ backgroundColor: producto.colorFondo }}
+                          >
+                            <img src={producto.imagen} alt={producto.nombre} />
+                          </div>
+
+                          {/* Info */}
+                          <div className="producto-info">
+                            <h3 className="producto-nombre">
+                              {producto.nombre}
+                            </h3>
+                            <p className="producto-marca">{producto.marca}</p>
+                            {producto.submarca && (
+                              <p className="producto-submarca">
+                                {producto.submarca}
+                              </p>
+                            )}
+                            <p className="producto-presentacion">
+                              {producto.presentacion}
+                            </p>
+                            {producto.precioExtra && (
+                              <p className="producto-extra">
+                                {producto.precioExtra}
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Botón */}
+                          <button className="producto-precio-btn">
+                            {producto.precio}
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )
+              )}
+            </div>
           </div>
-          {/* flecha derecha */}
-          <button className="flecha-nav flecha-der">▶</button>
+
+          {/* Botón derecha */}
+          <button className="flecha-nav flecha-der" onClick={nextSlide}>
+            ▶
+          </button>
         </div>
-        {/* Indicadores Puntos */}
+
+        {/* Indicadores */}
         <div className="indicadores">
-          {[...Array(Math.ceil(productos.length / 4))].map((_, index) => (
-            <span
-              key={index}
-              className={`punto ${index === currentIndex ? "activo" : ""}`}
-            ></span>
-          ))}
+          {Array.from({ length: Math.ceil(productos.length / 4) }).map(
+            (_, index) => (
+              <span
+                key={index}
+                className={`punto ${index === currentIndex ? "activo" : ""}`}
+                onClick={() => setCurrentIndex(index)}
+              ></span>
+            )
+          )}
         </div>
 
         {/* Botón final */}
         <div className="boton-final">
-          <button className="btn-mas-ahorro">ENCUENTRA MÁS AHORRO AQUÍ</button>
+          <button className="btn-mas-ahorro" onClick={() => navigate("/productos")}>
+            ENCUENTRA MAS AHORRO
+          </button>
         </div>
       </div>
     </Container>
@@ -158,6 +228,7 @@ export function Home() {
 const Container = styled.div`
   /* estilos aquí */
   width: 100%;
+
   .hero-section {
     height: 100vh;
     display: flex;
@@ -253,94 +324,228 @@ const Container = styled.div`
       }
     }
   }
-  /* Nueva seccion de productos */
+  /* ========== NUEVA SECCIÓN DE PRODUCTOS ========== */
   .productos-section {
     padding: 60px 20px;
-    background: linear-gradient(135deg, #e8f8f5, #d5f4e6);
+    background-color: linear-gradient(135deg, #e8f8f5, #d5f4e6);
     text-align: center;
     .titulo-productos {
-      margin-bottom: 40px;
-      h2 {
-        font-size: 2.8rem;
-        font-weight: 900;
-        color: #1a1a1a;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        margin: 0;
-      }
+      margin-bottom: 50px;
     }
-    .carrusel-container{
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      position: relative;
+    h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+      font-size: 2.8rem;
+      letter-spacing: 3px;
+      font-weight: 900;
+      color: #0056b3;
     }
-    .flecha-nav{
-      background: #2E86C1;
+  }
+
+  .carrusel-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    position: relative;
+
+    .flecha-nav {
+      background: #007bff;
       color: white;
-      border: none;
+      border-radius: 50%;
       width: 30px;
       height: 30px;
-      border-radius: 50%;
-      font-size: 1rem;
+      font-size: 1.2rem;
+      border: none;
       cursor: pointer;
+      z-index: 2;
       transition: all 0.3s ease;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
-      &:hover{
-        background: #1F5F99;
+      &:hover {
+        background-color: #0056b3;
         transform: scale(1.1);
       }
     }
-    .productos-wrapper{
-      display: flex;
-      gap: 30px;
-      flex: 1;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .producto-card{
-      text-align: center;
-      flex: 0 0 250px;
+  }
 
-      .producto-circulo{
-        width: 160px;
-        height: 160px;
-        border-radius: 50%;
-        margin: 0 auto 20px;
+  .productos-wrapper {
+    overflow: hidden;
+    width: 100%;
+    flex: 1;
+  }
+
+  .productos-slider {
+    display: flex;
+    transition: transform 0.6s ease-in-out;
+    width: 100%;
+  }
+
+  .productos-page {
+    display: flex;
+    flex: 0 0 100%;
+    justify-content: space-around;
+  }
+
+  .producto-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    flex: 1;
+    max-width: 240px;
+    min-width: 200px;
+    text-align: center;
+    transition: transform 0.3s;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 450px;
+    &:hover {
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  .producto-circulo {
+    width: 100px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    flex-shrink: 0;
+    img {
+      width: 80px;
+      height: 80px;
+      object-fit: comtain;
+    }
+  }
+  .producto-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    .producto-nombre {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #2e86c1;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      line-height: 1.2;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .producto-marca {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #2e86c1;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      height: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .producto-submarca {
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #2e86c1;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .producto-presentacion {
+      font-size: 0.85rem;
+      color: #7f8c8d;
+      margin-bottom: 4px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      .producto-extra {
+        font-size: 0.85rem;
+        color: #7f8c8d;
+        margin: 0 0 20px 0;
+        height: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-      }
-      img{
-        width: 80px;
-        height: 80px;
-        object-fit: contain;
       }
     }
-    .producto-info{
-      margin-bottom: 20px;
-      min-height: 120px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+  }
+  .producto-precio-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    &:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
     }
-    .producto-nombre{
-      font-size: 1rem;
-      font-weight: bold;
-      color:#2E86C1;
-      margin-bottom:8px;
-      text-transform: uppercase;
+  }
+
+  .indicadores {
+    margin: 40px 0;
+    text-align: center;
+  }
+
+  .punto {
+    height: 12px;
+    width: 12px;
+    margin: 0 8px;
+    background-color: #bdc3c7;
+    border-radius: 50%;
+    display: inline-block;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    &.activo {
+      background-color: #007bff;
+      transform: scale(1.3);
     }
-    .producto-marca{
-      font-size: 1rem;
-      font-weight: bold;
-      color:#2E86C1;
-      margin-bottom:4px;
-      text-transform: uppercase;
+    &:hover {
+      background-color: #007bff;
+      transform: scale(1.1);
+    }
+  }
+
+  .boton-final {
+    margin-top: 30px;
+    text-align: center;
+
+    .btn-mas-ahorro {
+      border: none;
+      font-size: 1.1rem;
+      font-weight: 900;
+      text-align: center;
+      background:linear-gradient(135deg, #fff239, #FFD100);
+      color: #123cf8;
+      padding: 15px 40px;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 15px rgba(255, 210, 0, 0.3);
+      &:hover {
+        background: linear-gradient(135deg, #FFD100, #FFC107);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(255, 210, 0, 0.4);
+      }
     }
   }
 `;
