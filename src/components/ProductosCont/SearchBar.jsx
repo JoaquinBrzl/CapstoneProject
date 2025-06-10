@@ -68,3 +68,5 @@ const ClearButton = styled.button`
     color: ${({ theme }) => theme.text};
   }
 `;
+
+//probando la Pagina
