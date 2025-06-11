@@ -41,7 +41,7 @@ export function FilterSidebar({
       </FilterHeader>
 
       <FilterSection>
-        <SeccionTitle>Categorías</SeccionTitle>
+        <SectionTitle>Categorías</SectionTitle>
         <CategoryList>
           <CategoryOption
             active={filtrosActivos.categoria === "todas"}
@@ -55,7 +55,7 @@ export function FilterSidebar({
               active={filtrosActivos.categoria === cat}
               onClick={() => handleCategoriaChange(cat)}
             >
-              {cat.charAt(0).toUppercase() + cat.slice(1)}
+              {cat.charAt(0).toUpperCase() + cat.slice(1)}
             </CategoryOption>
           ))}
         </CategoryList>
@@ -66,16 +66,16 @@ export function FilterSidebar({
         <PriceInputs>
           <PriceInput
             type="number"
-            placerHolder="Min"
+            placeholder="Min"
             value={filtrosActivos.precioMin || ""}
             onChange={(e) => handlePrecioChange("precioMin", e.target.value)}
           />
-          <span>-</span>
+          <span>Hasta</span>
           <PriceInput
             type="number"
             placeholder="Max"
             value={
-              filtrosActivos.precioMax === 999999
+              filtrosActivos.precioMax === 99999
                 ? ""
                 : filtrosActivos.precioMax
             }
@@ -86,23 +86,25 @@ export function FilterSidebar({
 
       <FilterSection>
         <SectionTitle>Ordenar por</SectionTitle>
-        <SortOptions
-          active={filtrosActivos.ordenar === "nombre"}
-          onClick={() => handlerOrdenChange("nombre")}
-        >
-          Nombre
-        </SortOptions>
-        <SortOptions
-          active={filtrosActivos.ordenar === "precio-asc"}
-          onClick={() => handlerOrdenChange("precio-asc")}
-        >
-          Precio: Menor a Mayor
-        </SortOptions>
-        <SortOptions
-          active={filtrosActivos.ordenar === "precio-desc"}
-          onClick={() => handlerOrdenChange("precio-desc")}
-        >
-          Precio: Mayor a Menor
+        <SortOptions>
+          <SortOption
+            active={filtrosActivos.ordenar === "nombre"}
+            onClick={() => handlerOrdenChange("nombre")}
+          >
+            Nombre
+          </SortOption>
+          <SortOption
+            active={filtrosActivos.ordenar === "precio-asc"}
+            onClick={() => handlerOrdenChange("precio-asc")}
+          >
+            Precio: Menor a Mayor
+          </SortOption>
+          <SortOption
+            active={filtrosActivos.ordenar === "precio-desc"}
+            onClick={() => handlerOrdenChange("precio-desc")}
+          >
+            Precio: Mayor a Menor
+          </SortOption>
         </SortOptions>
       </FilterSection>
 
@@ -184,7 +186,7 @@ const CategoryOption = styled.button`
 
 const PriceInputs = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
 `;
 

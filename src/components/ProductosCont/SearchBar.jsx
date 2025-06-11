@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { FiSearch } from "react-icons/fi";
+import { FiSearch,FiX } from "react-icons/fi";
 
 export function SearchBar({ busqueda, setBusqueda }) {
   return (
@@ -11,11 +11,11 @@ export function SearchBar({ busqueda, setBusqueda }) {
         type="text"
         placeholder="Buscar productos..."
         value={busqueda}
-        onChange={(e) => setBusqueda(e.traget.value)}
+        onChange={(e) => setBusqueda(e.target.value)}
       />
       {busqueda && (
         <ClearButton onClick={() => setBusqueda("")}>
-          <Fix />
+          <FiX />
         </ClearButton>
       )}
     </Container>
@@ -47,7 +47,7 @@ const SearchInput = styled.input`
   border: none;
   background: none;
   padding: 10px;
-  font-size: 16pc;
+  font-size: 16px;
   color: ${({ theme }) => theme.text};
   outline: none;
   &::placeholder {
