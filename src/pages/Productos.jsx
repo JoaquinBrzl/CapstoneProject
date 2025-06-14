@@ -108,7 +108,7 @@ export function Productos() {
   return (
     <Container>
       <Header>
-        <Title>BODEGA KUKY</Title>
+        <Title>BODEGA KUKY +</Title>
         <HeaderControls>
           <SearchBar busqueda={busqueda} setBusqueda={setBusqueda} />
           <FilterButton onClick={() => setMostrarFiltros(!mostrarFiltros)}>
