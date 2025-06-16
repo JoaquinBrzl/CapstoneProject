@@ -1,36 +1,39 @@
-import React, { useState } from 'react'
-import { MyRouters } from './routers/routes';
-import styled from 'styled-components';
-import { BrowserRouter } from 'react-router-dom';
-import {Sidebar} from "./components/Sidebar";
-import { Light, Dark } from './styles/Themes';  
-import { ThemeProvider } from 'styled-components';
+import React, { useState } from "react";
+import { MyRouters } from "./routers/routes";
+import styled from "styled-components";
+import { BrowserRouter } from "react-router-dom";
+import { Sidebar } from "./components/Sidebar";
+import { Light, Dark } from "./styles/Themes";
+import { ThemeProvider } from "styled-components";
+import { CartProvider } from "./context/CartContext";
 
 export const themeContext = React.createContext(null);
 function App() {
-  const [theme, setTheme] = useState('Light');
-  const themeStyle = theme==='Light'? Light : Dark;
+  const [theme, setTheme] = useState("Light");
+  const themeStyle = theme === "Light" ? Light : Dark;
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <>
-    <themeContext.Provider value={{ theme, setTheme }}>
-      <ThemeProvider theme={themeStyle}>
-        <BrowserRouter>
-          <AppContainer>
-            <SidebarContainer isOpen={sidebarOpen}>
-              <Sidebar
-                sidebarOpen={sidebarOpen}
-                setSidebarOpen={setSidebarOpen}
-              />
-            </SidebarContainer>
-            <MainContent isOpen={sidebarOpen}>
-              <MyRouters />
-            </MainContent>
-          </AppContainer>
-        </BrowserRouter>
-      </ThemeProvider>
-    </themeContext.Provider>
+      <themeContext.Provider value={{ theme, setTheme }}>
+        <ThemeProvider theme={themeStyle}>
+          <CartProvider>
+            <BrowserRouter>
+              <AppContainer>
+                <SidebarContainer isOpen={sidebarOpen}>
+                  <Sidebar
+                    sidebarOpen={sidebarOpen}
+                    setSidebarOpen={setSidebarOpen}
+                  />
+                </SidebarContainer>
+                <MainContent isOpen={sidebarOpen}>
+                  <MyRouters />
+                </MainContent>
+              </AppContainer>
+            </BrowserRouter>
+          </CartProvider>
+        </ThemeProvider>
+      </themeContext.Provider>
     </>
   );
 }
@@ -42,14 +45,15 @@ const SidebarContainer = styled.div`
   top: 0;
   left: 0;
   height: 100vh;
-  width: ${({ isOpen }) => (isOpen ? '300px' : '90px')};
-  background-color: ${({ theme }) => theme.sidebar}; // Usa el color que quieras si no tienes theme.sidebar
+  width: ${({ isOpen }) => (isOpen ? "300px" : "90px")};
+  background-color: ${({ theme }) =>
+    theme.sidebar}; // Usa el color que quieras si no tienes theme.sidebar
   transition: width 0.3s;
   z-index: 999;
 `;
 const MainContent = styled.div`
-    margin-left: ${({ isOpen }) => (isOpen ? '300px' : '90px')};
-  width: calc(100% - ${({ isOpen }) => (isOpen ? '300px' : '90px')});
+  margin-left: ${({ isOpen }) => (isOpen ? "300px" : "90px")};
+  width: calc(100% - ${({ isOpen }) => (isOpen ? "300px" : "90px")});
   background: ${({ theme }) => theme.bgtotal};
   color: ${({ theme }) => theme.text};
   transition: all 0.3s;
