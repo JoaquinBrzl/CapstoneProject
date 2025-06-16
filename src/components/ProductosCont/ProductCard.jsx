@@ -1,10 +1,11 @@
 import styled from "styled-components";
 import { FiShoppingCart, FiHeart } from "react-icons/fi";
+import { useCart } from "../../context/CartContext";
+
 export function ProductCard({ producto }) {
+  const { addToCart } = useCart();
   const agregarAlCarrito = () => {
-    // AQUI IRA LA LOGICA DEL CARRITO DE COMPRAS
-    console.log("Agregado al carrito: ", producto);
-    // SE MOSTRARA UN ALERT SOLO POR AHORA
+    addToCart(producto);
     alert(`${producto.nombre} agregado al carrito!`);
   };
   return (
