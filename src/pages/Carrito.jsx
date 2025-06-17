@@ -1,15 +1,113 @@
+import React, { useState } from 'react'; // Agregar React y useState
 import styled from "styled-components";
 import { useCart } from "../context/CartContext";
-import { FiMinus, FiPlus, FiTrash2, FiShoppingCart } from "react-icons/fi";
+import { FiMinus, FiPlus, FiTrash2, FiShoppingCart, FiFileText } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { jsPDF } from "jspdf";           // ← ARREGLO 1
+import jsPDF from "jspdf"; // Quitar las llaves
 import autoTable from "jspdf-autotable";
+import { BiSolidDonateHeart } from "react-icons/bi";
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "../firebase";
+import { ModalEdicion } from "../components/CRUD/ModalEdicion";
+import Swal from "sweetalert2";
 
 export function Carrito() {
-  // ------------------------------------
-  const { cartItems, updateQuantity, removeFromCart, getTotal } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, getTotal, clearCart } = useCart(); // Agregar clearCart
   const navigate = useNavigate();
+  
+  // Estados para el modal de donación
+  const [showDonationModal, setShowDonationModal] = useState(false);
+  const [donacionData, setDonacionData] = useState({
+    nombre: "",
+    dni: "",
+    ciudad: "",
+    donativo: "",
+    cantidad: "",
+  });
 
+  // Función para preparar los datos de donación cuando se abre el modal
+  const handleOpenDonationModal = () => {
+    // Preparar el resumen de productos para el campo "donativo"
+    const resumenProductos = cartItems
+      .map((item) => `${item.nombre} (x${item.cantidad})`)
+      .join(", ");
+
+    // Calcular cantidad total
+    const cantidadTotal = cartItems.reduce(
+      (sum, item) => sum + item.cantidad,
+      0
+    );
+
+    // Establecer los datos iniciales del modal
+    setDonacionData({
+      nombre: "",
+      dni: "",
+      ciudad: "Lima", // Ciudad por defecto
+      donativo: resumenProductos, // Lista de productos
+      cantidad: `${cantidadTotal} unidades`, // Cantidad total
+    });
+
+    setShowDonationModal(true);
+  };
+
+  // Función para guardar la donación
+  const handleSaveDonation = async (formData) => {
+    try {
+      // Mostrar loading
+      Swal.fire({
+        title: "Procesando donación...",
+        text: "Por favor espere",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      // Preparar datos adicionales para la donación
+      const donacionCompleta = {
+        ...formData,
+        complete: false, // Estado inicial pendiente
+        fechaDonacion: new Date().toISOString(),
+        productos: cartItems, // Guardar también el detalle de productos
+        valorEstimado: getTotal(), // Valor estimado de la donación
+      };
+
+      // Guardar en Firebase
+      await addDoc(collection(db, "donaciones"), donacionCompleta);
+
+      // Limpiar carrito
+      clearCart();
+
+      // Cerrar modal
+      setShowDonationModal(false);
+
+      // Mostrar mensaje de éxito
+      Swal.fire({
+        icon: "success",
+        title: "¡Donación registrada!",
+        text: "Gracias por tu generosidad. Tu donación ha sido registrada exitosamente.",
+        confirmButtonText: "Ver mis donaciones",
+        showCancelButton: true,
+        cancelButtonText: "Seguir comprando",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          navigate("/donaciones");
+        } else {
+          navigate("/productos");
+        }
+      });
+    } catch (error) {
+      console.error("Error al registrar donación:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo registrar la donación. Por favor intenta nuevamente.",
+      });
+    }
+  };
+
+  // ------------------------------------
   const generarPDF = () => {
     if (cartItems.length === 0) {
       alert("Tu carrito está vacío. Agrega productos para generar la orden.");
@@ -19,8 +117,8 @@ export function Carrito() {
     const doc = new jsPDF();
 
     /* === Definición de colores corporativos === */
-    const primaryColor = [51, 51, 51];      // Gris oscuro
-    const secondaryColor = [231, 76, 60];   // Rojo
+    const primaryColor = [51, 51, 51]; // Gris oscuro
+    const secondaryColor = [231, 76, 60]; // Rojo
     const lightGray = [245, 245, 245];
 
     /* === HEADER === */
@@ -37,11 +135,9 @@ export function Carrito() {
     doc.text("Tu bodega de confianza", 105, 30, { align: "center" });
 
     doc.setFontSize(10);
-    doc.text("contacto@bodegakuky.com | Av. Principal 123, Lima",
-      105,
-      38,
-      { align: "center" }
-    );
+    doc.text("contacto@bodegakuky.com | Av. Principal 123, Lima", 105, 38, {
+      align: "center",
+    });
 
     /* === INFORMACIÓN DE LA ORDEN === */
     doc.setFillColor(...lightGray);
@@ -75,7 +171,9 @@ export function Carrito() {
 
     const tableData = cartItems.map((item) => {
       const precioConDesc =
-        item.descuento > 0 ? item.precio * (1 - item.descuento / 100) : item.precio;
+        item.descuento > 0
+          ? item.precio * (1 - item.descuento / 100)
+          : item.precio;
       const subtotal = precioConDesc * item.cantidad;
 
       const precioDisplay =
@@ -84,7 +182,8 @@ export function Carrito() {
           : `S/ ${precioConDesc.toFixed(2)}`;
 
       return [
-        item.nombre + (item.descripcion ? `\n${item.descripcion.substring(0, 50)}...` : ""),
+        item.nombre +
+          (item.descripcion ? `\n${item.descripcion.substring(0, 50)}...` : ""),
         item.cantidad.toString(),
         precioDisplay,
         `S/ ${subtotal.toFixed(2)}`,
@@ -113,8 +212,15 @@ export function Carrito() {
       alternateRowStyles: { fillColor: lightGray },
       foot: [
         [
-          { content: "TOTAL:", colSpan: 3, styles: { halign: "right", fontStyle: "bold" } },
-          { content: `S/ ${getTotal().toFixed(2)}`, styles: { fontStyle: "bold", fontSize: 12 } },
+          {
+            content: "TOTAL:",
+            colSpan: 3,
+            styles: { halign: "right", fontStyle: "bold" },
+          },
+          {
+            content: `S/ ${getTotal().toFixed(2)}`,
+            styles: { fontStyle: "bold", fontSize: 12 },
+          },
         ],
       ],
       footStyles: {
@@ -126,13 +232,13 @@ export function Carrito() {
 
       /* === Bloque robusto para dibujar borde === */
       didDrawPage: function (data) {
-        const left   = data.settings.margin.left  || 15;
-        const right  = data.settings.margin.right || 15;
-        const pageW  = doc.internal.pageSize.getWidth();
-        const width  = data.table?.width ?? (pageW - left - right);
+        const left = data.settings.margin.left || 15;
+        const right = data.settings.margin.right || 15;
+        const pageW = doc.internal.pageSize.getWidth();
+        const width = data.table?.width ?? pageW - left - right;
 
         const startY = data.table?.startY ?? data.settings.startY ?? 98;
-        const endY   = data.cursor?.y     ?? startY + 10;
+        const endY = data.cursor?.y ?? startY + 10;
 
         doc.setDrawColor(...primaryColor);
         doc.setLineWidth(0.5);
@@ -141,8 +247,8 @@ export function Carrito() {
     });
 
     /* === RESUMEN DE LA COMPRA === */
-    const finalY    = doc.lastAutoTable?.finalY || 150;           // ← protección
-    const resumenY  = finalY + 15;
+    const finalY = doc.lastAutoTable?.finalY || 150;
+    const resumenY = finalY + 15;
 
     doc.setFillColor(...lightGray);
     doc.roundedRect(120, resumenY, 75, 40, 3, 3, "F");
@@ -151,17 +257,24 @@ export function Carrito() {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
 
-    const subtotal    = getTotal();
-    const delivery    = subtotal >= 50 ? 0 : 5;
-    const totalFinal  = subtotal + delivery;
+    const subtotal = getTotal();
+    const delivery = subtotal >= 50 ? 0 : 5;
+    const totalFinal = subtotal + delivery;
 
     doc.text("Subtotal:", 125, resumenY + 10);
-    doc.text(`S/ ${subtotal.toFixed(2)}`, 185, resumenY + 10, { align: "right" });
-
-    doc.text("Delivery:", 125, resumenY + 18);
-    doc.text(delivery === 0 ? "GRATIS" : `S/ ${delivery.toFixed(2)}`, 185, resumenY + 18, {
+    doc.text(`S/ ${subtotal.toFixed(2)}`, 185, resumenY + 10, {
       align: "right",
     });
+
+    doc.text("Delivery:", 125, resumenY + 18);
+    doc.text(
+      delivery === 0 ? "GRATIS" : `S/ ${delivery.toFixed(2)}`,
+      185,
+      resumenY + 18,
+      {
+        align: "right",
+      }
+    );
 
     doc.setLineWidth(0.5);
     doc.line(125, resumenY + 22, 190, resumenY + 22);
@@ -170,7 +283,9 @@ export function Carrito() {
     doc.setFontSize(12);
     doc.text("TOTAL:", 125, resumenY + 32);
     doc.setTextColor(...secondaryColor);
-    doc.text(`S/ ${totalFinal.toFixed(2)}`, 185, resumenY + 32, { align: "right" });
+    doc.text(`S/ ${totalFinal.toFixed(2)}`, 185, resumenY + 32, {
+      align: "right",
+    });
 
     /* === INFORMACIÓN ADICIONAL === */
     const infoY = resumenY + 50;
@@ -189,11 +304,11 @@ export function Carrito() {
       "✓ Aceptamos pagos en efectivo, Yape y Plin",
       "✓ Delivery gratis para compras mayores a S/ 50.00",
       "✓ Horario: Lun‑Sáb 8:00‑21:00, Dom 9:00‑14:00",
-      "✓ WhatsApp: +51 999 888 777",
+      "✓ WhatsApp: +51 999 888 777",
     ].forEach((t, i) => doc.text(t, 20, infoY + 8 + i * 6));
 
     /* === MÉTODOS DE PAGO === */
-    const pagosY = infoY + 8 + 5 * 6 + 5; // salto
+    const pagosY = infoY + 8 + 5 * 6 + 5;
     doc.setFillColor(250, 250, 250);
     doc.roundedRect(15, pagosY, 180, 25, 3, 3, "FD");
 
@@ -204,7 +319,11 @@ export function Carrito() {
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text("$ Efectivo  |  $ Yape  |  $ Plin  |  $ Transferencia", 20, pagosY + 18);
+    doc.text(
+      "💵 Efectivo  |  💜 Yape  |  💚 Plin  |  🏦 Transferencia",
+      20,
+      pagosY + 18
+    );
 
     /* === QR simulado === */
     if (totalFinal > 0) {
@@ -226,7 +345,9 @@ export function Carrito() {
     doc.setTextColor(150, 150, 150);
     doc.text("Gracias por su preferencia", 105, 285, { align: "center" });
     doc.setFont("helvetica", "bold");
-    doc.text("BODEGA KUKY - Siempre cerca de ti", 105, 290, { align: "center" });
+    doc.text("BODEGA KUKY - Siempre cerca de ti", 105, 290, {
+      align: "center",
+    });
 
     doc.setDrawColor(...secondaryColor);
     doc.setLineWidth(2);
@@ -237,15 +358,46 @@ export function Carrito() {
   };
   // ------------------------------------
 
+  // Función para continuar compra
+  const handleContinuarCompra = () => {
+    if (cartItems.length === 0) {
+      Swal.fire({
+        icon: "warning",
+        title: "Carrito vacío",
+        text: "Agrega productos antes de continuar",
+      });
+      return;
+    }
+    generarPDF();
+
+    setTimeout(() => {
+      Swal.fire({
+        icon: "question",
+        title: "¿Deseas limpiar el carrito?",
+        text: "Se ha generado tu orden de compra",
+        showCancelButton: true,
+        confirmButtonText: "Sí, limpiar",
+        cancelButtonText: "No, mantener",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          clearCart();
+          navigate("/productos");
+        }
+      });
+    }, 1000);
+  };
+
   /* === RENDER === */
-  if (cartItems.length === 0) {    
+  if (cartItems.length === 0) {
     return (
       <EmptyCartContainer>
         <EmptyCartIcon>
           <FiShoppingCart />
         </EmptyCartIcon>
         <EmptyCartTitle>Tu carrito está vacío</EmptyCartTitle>
-        <EmptyCartText>¡Agrega productos para comenzar tu compra!</EmptyCartText>
+        <EmptyCartText>
+          ¡Agrega productos para comenzar tu compra!
+        </EmptyCartText>
         <ContinueShoppingButton onClick={() => navigate("/productos")}>
           Ir a comprar
         </ContinueShoppingButton>
@@ -254,111 +406,129 @@ export function Carrito() {
   }
 
   return (
-    <CartContainer>
-      <CartContent>
-        <CartHeader>
-          <CartTitle>Carrito ({cartItems.length} productos)</CartTitle>
-          <VendorInfo>
-            Vendido por <VendorName>Bodega Kuky</VendorName>
-          </VendorInfo>
-        </CartHeader>
+    <>
+      <CartContainer>
+        <CartContent>
+          <CartHeader>
+            <CartTitle>Carrito ({cartItems.length} productos)</CartTitle>
+            <VendorInfo>
+              Vendido por <VendorName>Bodega Kuky</VendorName>
+            </VendorInfo>
+          </CartHeader>
 
-        <SelectAllContainer>
-          <Checkbox type="checkbox" defaultChecked />
-          <SelectAllText>Seleccionar todos</SelectAllText>
-        </SelectAllContainer>
+          <SelectAllContainer>
+            <Checkbox type="checkbox" defaultChecked />
+            <SelectAllText>Seleccionar todos</SelectAllText>
+          </SelectAllContainer>
 
-        <CartItemsList>
-          {cartItems.map((item) => (
-            <CartItem key={item.id}>
-              <ItemCheckbox type="checkbox" defaultChecked />
-
-              <ItemImage
-                src={item.imagen || "https://via.placeholder.com/120"}
-                alt={item.nombre}
-              />
-
-              <ItemDetails>
-                <ItemName>{item.nombre}</ItemName>
-                <ItemCategory>{item.categoria.toUpperCase()}</ItemCategory>
-                <ItemDescription>{item.descripcion}</ItemDescription>
-                {item.stock && item.stock < 10 && (
-                  <StockWarning>Últimas {item.stock} unidades</StockWarning>
-                )}
-              </ItemDetails>
-
-              <ItemPrice>
-                {item.descuento > 0 ? (
-                  <>
-                    <OriginalPrice>S/ {item.precio.toFixed(2)}</OriginalPrice>
-                    <CurrentPrice>
-                      S/ {(item.precio * (1 - item.descuento / 100)).toFixed(2)}
-                    </CurrentPrice>
-                  </>
-                ) : (
-                  <CurrentPrice>S/ {item.precio.toFixed(2)}</CurrentPrice>
-                )}
-              </ItemPrice>
-
-              <QuantityContainer>
-                <QuantityButton
-                  onClick={() => updateQuantity(item.id, item.cantidad - 1)}
-                >
-                  <FiMinus />
-                </QuantityButton>
-                <QuantityInput
-                  type="number"
-                  value={item.cantidad}
-                  onChange={(e) =>
-                    updateQuantity(item.id, parseInt(e.target.value) || 1)
-                  }
-                  min="1"
+          <CartItemsList>
+            {cartItems.map((item) => (
+              <CartItem key={item.id}>
+                <ItemCheckbox type="checkbox" defaultChecked />
+                <ItemImage
+                  src={item.imagen || "https://via.placeholder.com/120"}
+                  alt={item.nombre}
                 />
-                <QuantityButton
-                  onClick={() => updateQuantity(item.id, item.cantidad + 1)}
-                >
-                  <FiPlus />
-                </QuantityButton>
-                <StockInfo>Máx {item.stock || 99} unidades</StockInfo>
-              </QuantityContainer>
+                <ItemDetails>
+                  <ItemName>{item.nombre}</ItemName>
+                  <ItemCategory>{item.categoria.toUpperCase()}</ItemCategory>
+                  <ItemDescription>{item.descripcion}</ItemDescription>
+                  {item.stock && item.stock < 10 && (
+                    <StockWarning>Últimas {item.stock} unidades</StockWarning>
+                  )}
+                </ItemDetails>
+                <ItemPrice>
+                  {item.descuento > 0 ? (
+                    <>
+                      <OriginalPrice>S/ {item.precio.toFixed(2)}</OriginalPrice>
+                      <CurrentPrice>
+                        S/ {(item.precio * (1 - item.descuento / 100)).toFixed(2)}
+                      </CurrentPrice>
+                    </>
+                  ) : (
+                    <CurrentPrice>S/ {item.precio.toFixed(2)}</CurrentPrice>
+                  )}
+                </ItemPrice>
+                
+                <QuantityContainer>
+                  <QuantityButton
+                    onClick={() => updateQuantity(item.id, item.cantidad - 1)}
+                  >
+                    <FiMinus />
+                  </QuantityButton>
+                  <QuantityInput
+                    type="number"
+                    value={item.cantidad}
+                    onChange={(e) =>
+                      updateQuantity(item.id, parseInt(e.target.value) || 1)
+                    }
+                    min="1"
+                  />
+                  <QuantityButton
+                    onClick={() => updateQuantity(item.id, item.cantidad + 1)}
+                  >
+                    <FiPlus />
+                  </QuantityButton>
+                  <StockInfo>Máx {item.stock || 99} unidades</StockInfo>
+                </QuantityContainer>
+                <RemoveButton onClick={() => removeFromCart(item.id)}>
+                  <FiTrash2 />
+                </RemoveButton>
+              </CartItem>
+            ))}
+          </CartItemsList>
+        </CartContent>
 
-              <RemoveButton onClick={() => removeFromCart(item.id)}>
-                <FiTrash2 />
-              </RemoveButton>
-            </CartItem>
-          ))}
-        </CartItemsList>
-      </CartContent>
+        <OrderSummary>
+          <SummaryTitle>Resumen de la orden</SummaryTitle>
 
-      <OrderSummary>
-        <SummaryTitle>Resumen de la orden</SummaryTitle>
+          <SummaryRow>
+            <SummaryLabel>Productos ({cartItems.length})</SummaryLabel>
+            <SummaryValue>S/ {getTotal().toFixed(2)}</SummaryValue>
+          </SummaryRow>
 
-        <SummaryRow>
-          <SummaryLabel>Productos ({cartItems.length})</SummaryLabel>
-          <SummaryValue>S/ {getTotal().toFixed(2)}</SummaryValue>
-        </SummaryRow>
+          <Divider />
 
-        <Divider />
+          <TotalRow>
+            <TotalLabel>Total:</TotalLabel>
+            <TotalValue>S/ {getTotal().toFixed(2)}</TotalValue>
+          </TotalRow>
 
-        <TotalRow>
-          <TotalLabel>Total:</TotalLabel>
-          <TotalValue>S/ {getTotal().toFixed(2)}</TotalValue>
-        </TotalRow>
+          <CheckoutButton onClick={handleContinuarCompra}>
+            <FiFileText style={{ marginRight: "8px" }} />
+            Generar Orden (PDF)
+          </CheckoutButton>
 
-        <CheckoutButton onClick={generarPDF} >Continuar compra</CheckoutButton>
+          <DonateButton onClick={handleOpenDonationModal}>
+            <BiSolidDonateHeart style={{ marginRight: "8px" }} />
+            Donar estos productos
+          </DonateButton>
 
-        <PaymentOptions>
-          <YapeOption>
-            <YapeIcon>💜</YapeIcon>
-            ¡Ahora puedes pagar tus compras con Yape!
-          </YapeOption>
-        </PaymentOptions>
-      </OrderSummary>
-    </CartContainer>
+          <DonateInfo>
+            Convierte tu compra en una donación para quienes más lo necesitan
+          </DonateInfo>
+
+          <PaymentOptions>
+            <YapeOption>
+              <YapeIcon>💜</YapeIcon>
+              ¡Ahora puedes pagar tus compras con Yape!
+            </YapeOption>
+          </PaymentOptions>
+        </OrderSummary>
+      </CartContainer>
+
+      {/* Modal de donación */}
+      <ModalEdicion
+        show={showDonationModal}
+        handleClose={() => setShowDonationModal(false)}
+        donacion={donacionData}
+        onSave={handleSaveDonation}
+      />
+    </>
   );
 }
 
-
+// Estilos
 const CartContainer = styled.div`
   display: grid;
   grid-template-columns: 1fr 380px;
@@ -614,10 +784,50 @@ const CheckoutButton = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     background: #222;
   }
+`;
+
+const DonateButton = styled.button`
+  width: 100%;
+  padding: 16px;
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  box-shadow: 0 4px 6px rgba(39, 174, 96, 0.2);
+  
+  &:hover {
+    background: #219a52;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(39, 174, 96, 0.3);
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);
+  }
+`;
+
+const DonateInfo = styled.p`
+  text-align: center;
+  color: ${({ theme }) => theme.text}60;
+  font-size: 13px;
+  margin-top: 10px;
+  font-style: italic;
 `;
 
 const PaymentOptions = styled.div`
