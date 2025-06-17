@@ -147,7 +147,8 @@ export function Donaciones() {
       <h1>DONACIONES - REALIZADAS</h1>
       <AddDonacion />
       <hr />
-      <table className="table table-dark table-striped table-container">
+      <div className="table-responsive">
+        <table className="table table-dark table-striped table-container">
         <thead>
           <tr>
             <th>Nombre</th>
@@ -180,6 +181,7 @@ export function Donaciones() {
           )}
         </tbody>
       </table>
+      </div>
 
       {showModal && (
         <ModalEdicion
