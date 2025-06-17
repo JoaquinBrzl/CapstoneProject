@@ -1,10 +1,13 @@
 import styled from "styled-components";
 import { FiShoppingCart, FiHeart } from "react-icons/fi";
+import { useCart } from "../../context/CartContext";
+
 export function ProductCard({ producto }) {
-  // AQUI IRA LA LOGICA DEL CARRITO DE COMPRAS
-  console.log("Agregado al carrito: ", producto);
-  // SE MOSTRARA UN ALERT SOLO POR AHORA
-  alert(`${producto.nombre} agregado al carrito!`);
+  const { addToCart } = useCart();
+  const agregarAlCarrito = () => {
+    addToCart(producto);
+    alert(`${producto.nombre} agregado al carrito!`);
+  };
   return (
     <Container>
       <ImageContainer>
@@ -16,29 +19,32 @@ export function ProductCard({ producto }) {
           <FiHeart />
         </FavoriteButton>
         {producto.descuento > 0 && (
-          <DiscountButton>-{producto.descuento}</DiscountButton>
+          <DiscountBadge>-{producto.descuento}</DiscountBadge>
         )}
       </ImageContainer>
 
       <ProductInfo>
-        <ProductoName>{producto.nombre}</ProductoName>
-        <ProductoDescription>{producto.descripcion}</ProductoDescription>
+        <ProductName>{producto.nombre}</ProductName>
+        <ProductDescription>{producto.descripcion}</ProductDescription>
 
         <PriceContainer>
           {producto.descuento > 0 ? (
             <>
-              <OldPrice>S/. {producto.precio.toFidex(2)}</OldPrice>
+              <OldPrice>S/. {Number(producto.precio).toFixed(2)}</OldPrice>
               <Price>
                 S/.{" "}
-                {(producto.precio * (1 - producto.descuento / 100)).toFixed(2)}
+                {(
+                  Number(producto.precio) *
+                  (1 - producto.descuento / 100)
+                ).toFixed(2)}
               </Price>
             </>
           ) : (
-            <Price>S/. {producto.precio.toFidex(2)}</Price>
+            <Price>S/. {Number(producto.precio).toFixed(2)}</Price>
           )}
         </PriceContainer>
 
-        <AddToCartButton onclick={agregarAlCarrito}>
+        <AddToCartButton onClick={agregarAlCarrito}>
           <FiShoppingCart />
           Agregar al Carrito
         </AddToCartButton>
@@ -52,19 +58,19 @@ const Container = styled.div`
   background: ${({ theme }) => theme.bg};
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px ${({theme})=>theme.text}10;
+  box-shadow: 0 2px 8px ${({ theme }) => theme.text}10;
   transition: all 0.3;
   &:hover {
     transform: translateY(-5px);
-    box-shadow: 0 4px 12px ${({theme})=>theme.text}20;
+    box-shadow: 0 4px 12px ${({ theme }) => theme.text}20;
   }
 `;
 
 const ImageContainer = styled.div`
-    position: relative;
-    width: 100%;
-    height: 250px;
-    overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 250px;
+  overflow: hidden;
 `;
 
 const ProductImage = styled.img`
@@ -86,8 +92,8 @@ const FavoriteButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
   &:hover {
     background: #f0f0f0;
   }
@@ -132,7 +138,7 @@ const PriceContainer = styled.div`
 const Price = styled.span`
   font-size: 24px;
   font-weight: bold;
-  color: ${({ theme }) => theme.primary || '#2ecc71'};
+  color: ${({ theme }) => theme.primary || "#2ecc71"};
 `;
 
 const OldPrice = styled.span`
@@ -144,7 +150,7 @@ const OldPrice = styled.span`
 const AddToCartButton = styled.button`
   width: 100%;
   padding: 12px;
-  background: ${({ theme }) => theme.primary || '#3498db'};
+  background: ${({ theme }) => theme.primary || "#3498db"};
   color: white;
   border: none;
   border-radius: 8px;
@@ -156,8 +162,8 @@ const AddToCartButton = styled.button`
   justify-content: center;
   gap: 8px;
   transition: background 0.3s;
-  
+
   &:hover {
-    background: ${({ theme }) => theme.primaryHover || '#2980b9'};
+    background: ${({ theme }) => theme.primaryHover || "#2980b9"};
   }
 `;

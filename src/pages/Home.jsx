@@ -71,17 +71,16 @@ export function Home() {
         "https://peruvianboxofficial.com/cdn/shop/files/C415FED4-9AD8-4E6D-BADC-648AABFE111F.png?v=1705628491",
       colorFondo: "#9B59B6", // Morado
     },
-        {
+    {
       id: 7,
       nombre: "Trocitos de Atun",
       marca: "FLORIDA",
       presentacion: "la x 140 gr",
       precio: "S/ 4.90",
-      imagen:
-        "https://labodega.com.pe/Adminbackend/fotos/producto12223.jpg",
+      imagen: "https://labodega.com.pe/Adminbackend/fotos/producto12223.jpg",
       colorFondo: "#9bc9fd", // Morado
     },
-        {
+    {
       id: 8,
       nombre: "Lenteja bebé",
       marca: "EL GRANELITO",
@@ -216,7 +215,10 @@ export function Home() {
 
         {/* Botón final */}
         <div className="boton-final">
-          <button className="btn-mas-ahorro" onClick={() => navigate("/productos")}>
+          <button
+            className="btn-mas-ahorro"
+            onClick={() => navigate("/productos")}
+          >
             ENCUENTRA MAS AHORRO
           </button>
         </div>
@@ -533,7 +535,7 @@ const Container = styled.div`
       font-size: 1.1rem;
       font-weight: 900;
       text-align: center;
-      background:linear-gradient(135deg, #fff239, #FFD100);
+      background: linear-gradient(135deg, #fff239, #ffd100);
       color: #123cf8;
       padding: 15px 40px;
       border-radius: 30px;
@@ -542,7 +544,7 @@ const Container = styled.div`
       letter-spacing: 1px;
       box-shadow: 0 4px 15px rgba(255, 210, 0, 0.3);
       &:hover {
-        background: linear-gradient(135deg, #FFD100, #FFC107);
+        background: linear-gradient(135deg, #ffd100, #ffc107);
         transform: translateY(-3px);
         box-shadow: 0 8px 25px rgba(255, 210, 0, 0.4);
       }

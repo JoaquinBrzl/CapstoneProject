@@ -25,10 +25,13 @@ import { auth } from "../firebase";
 
 // Contexto del tema
 import { themeContext } from "../App";
+import { useCart } from "../context/CartContext";
 
 export function Sidebar({ sidebarOpen, setSidebarOpen }) {
   // [1] Estados del componente
   const [user, setUser] = useState(null); // Estado de usuario
+  const { getItemCount } = useCart();
+  const itemCount = getItemCount();
 
   // [2] Efecto para manejar autenticación
   useEffect(() => {
@@ -40,6 +43,21 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const { setTheme, theme } = useContext(themeContext);
   const toggleTheme = () => setTheme(theme === "Light" ? "Dark" : "Light");
+
+  // Links Array
+  const linksArray = [
+  { label: "Home", icon: <FaHome />, to: "/" },
+  { label: "Tienda", icon: <FaStore />, to: "/productos" },
+  {
+    label: "Mi Carrito",
+    icon: <FaCartPlus />,
+    to: "/carrito",
+    badge: itemCount
+  },
+  { label: "Donaciones", icon: <BiSolidDonateHeart />, to: "/donaciones" },
+  { label: "Ayudas", icon: <FaHandsHelping />, to: "/reportes" },
+];
+
 
   return (
     <Container isOpen={sidebarOpen} themeUse={theme}>
@@ -57,15 +75,19 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
       </div>
 
       {/* [C] Menú principal (mapeo de linksArray) */}
-      {linksArray.map(({ icon, label, to }) => (
+      {linksArray.map(({ icon, label, to, badge }) => (
         <div className="linkContainer" key={label}>
           <NavLink
             to={to}
             className={({ isActive }) => `Links${isActive ? ` active` : ``}`}
           >
-            <div className="Linkicon">{icon}</div>
+            <div className="Linkicon">
+              {icon}
+              {!sidebarOpen && badge > 0 && <BadgeSmall>{badge}</BadgeSmall>}
+            </div>
             <span className={`sidebar-text ${sidebarOpen ? "open" : ""}`}>
               {label}
+              {sidebarOpen && badge > 0 && <BadgeLarge>{badge}</BadgeLarge>}
             </span>
           </NavLink>
         </div>
@@ -142,16 +164,6 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
     </Container>
   );
 }
-
-// [4] Datos del menú
-const linksArray = [
-  { label: "Home", icon: <FaHome />, to: "/" },
-  { label: "Tienda", icon: <FaStore />, to: "/productos" },
-  { label: "Mi Carrito", icon: <FaCartPlus />, to: "/estadisticas" },
-  { label: "Donaciones", icon: <BiSolidDonateHeart />, to: "/donaciones" },
-  { label: "Ayudas", icon: <FaHandsHelping />, to: "/reportes" },
-];
-
 // #endregion
 
 // #region STYLED COMPONENTS
@@ -222,6 +234,7 @@ const Container = styled.div`
       .Linkicon {
         padding: ${v.smSpacing} ${v.mdSpacing};
         display: flex;
+        position: relative;
         svg {
           font-size: 25px;
         }
@@ -340,6 +353,35 @@ const Container = styled.div`
       }
     }
   }
+`;
+const BadgeSmall = styled.span`
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+`;
+
+const BadgeLarge = styled.span`
+  background: #e74c3c;
+  color: white;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 10px;
+  min-width: 20px;
+  text-align: center;
+  display: inline-block;
 `;
 const Divider = styled.div`
   height: 1px;
