@@ -1,7 +1,6 @@
-
 import styled from "styled-components";
 import { useState, useEffect } from "react";
-import { collection, query, onSnapshot, updateDoc, doc, orderBy, where } from "firebase/firestore";
+import { collection, query, onSnapshot, updateDoc, doc, orderBy } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -10,16 +9,18 @@ import Swal from "sweetalert2";
 
 export function PanelPedidos() {
   const [pedidos, setPedidos] = useState([]);
-  const [filtro, setFiltro] = useState("todos"); // todos, nuevos, preparando, listos
+  const [filtro, setFiltro] = useState("todos");
   const [user, setUser] = useState(null);
   const [selectedPedido, setSelectedPedido] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   // Verificar autenticación
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (userFirebase) => {
       setUser(userFirebase);
+      setLoading(false);
       if (!userFirebase) {
         navigate("/login");
       }
@@ -31,33 +32,61 @@ export function PanelPedidos() {
   useEffect(() => {
     if (!user) return;
 
-    const q = query(
-      collection(db, "ventas"),
-      orderBy("fecha", "desc")
-    );
+    try {
+      const q = query(
+        collection(db, "ventas"),
+        orderBy("fecha", "desc")
+      );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const pedidosData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      setPedidos(pedidosData);
-      
-      // Reproducir sonido si hay pedidos nuevos no vistos
-      const nuevosNoVistos = pedidosData.filter(p => !p.visto && p.estadoPedido === "nuevo");
-      if (nuevosNoVistos.length > 0) {
-        playNotificationSound();
-      }
-    });
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        try {
+          const pedidosData = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          
+          setPedidos(pedidosData);
+          
+          // Reproducir sonido si hay pedidos nuevos no vistos
+          const nuevosNoVistos = pedidosData.filter(p => !p.visto && p.estadoPedido === "nuevo");
+          if (nuevosNoVistos.length > 0) {
+            playNotificationSound();
+          }
+        } catch (error) {
+          console.error("Error procesando pedidos:", error);
+        }
+      }, (error) => {
+        console.error("Error en onSnapshot:", error);
+      });
 
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Error configurando listener:", error);
+    }
   }, [user]);
 
-  // Función para reproducir sonido de notificación
+  // Función para reproducir sonido de notificación (mejorada)
   const playNotificationSound = () => {
-    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
-    audio.play().catch(e => console.log("Error playing sound:", e));
+    try {
+      // Crear un beep simple usando Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.log("No se pudo reproducir el sonido:", error);
+    }
   };
 
   // Marcar pedido como visto
@@ -162,6 +191,14 @@ export function PanelPedidos() {
     }
   };
 
+  if (loading) {
+    return (
+      <LoadingContainer>
+        <div>Cargando...</div>
+      </LoadingContainer>
+    );
+  }
+
   if (!user) {
     return null;
   }
@@ -205,7 +242,7 @@ export function PanelPedidos() {
         {pedidosFiltrados.map(pedido => (
           <PedidoCard key={pedido.id} nuevo={!pedido.visto}>
             <PedidoHeader>
-              <OrderNumber>#{pedido.numeroOrden}</OrderNumber>
+              <OrderNumber>#{pedido.numeroOrden || pedido.id}</OrderNumber>
               <TipoEntrega tipo={pedido.tipoEntrega}>
                 {pedido.tipoEntrega === "delivery" ? <FiTruck /> : <FiHome />}
                 {pedido.tipoEntrega === "delivery" ? "Delivery" : "Recojo"}
@@ -213,29 +250,29 @@ export function PanelPedidos() {
             </PedidoHeader>
 
             <ClienteInfo>
-              <h4>{pedido.cliente.nombre}</h4>
-              <p><FiPhone /> {pedido.cliente.telefono}</p>
+              <h4>{pedido.cliente?.nombre || "Cliente no especificado"}</h4>
+              <p><FiPhone /> {pedido.cliente?.telefono || "No especificado"}</p>
               {pedido.tipoEntrega === "delivery" && (
-                <p><FiMapPin /> {pedido.cliente.direccion}, {pedido.cliente.distrito}</p>
+                <p><FiMapPin /> {pedido.cliente?.direccion || "No especificado"}, {pedido.cliente?.distrito || ""}</p>
               )}
             </ClienteInfo>
 
             <ProductosResumen>
-              <strong>{pedido.cantidadProductos} productos</strong>
-              <span> • {pedido.cantidadItems} items</span>
+              <strong>{pedido.cantidadProductos || 0} productos</strong>
+              <span> • {pedido.cantidadItems || 0} items</span>
             </ProductosResumen>
 
             <TotalInfo>
               <FiDollarSign />
-              <span>Total: S/ {pedido.total.toFixed(2)}</span>
+              <span>Total: S/ {(pedido.total || 0).toFixed(2)}</span>
             </TotalInfo>
 
             <EstadosContainer>
               <EstadoBadge color={getEstadoColor(pedido.estadoPedido)}>
-                {pedido.estadoPedido.toUpperCase()}
+                {(pedido.estadoPedido || "nuevo").toUpperCase()}
               </EstadoBadge>
               <EstadoBadge color={getEstadoPagoColor(pedido.estadoPago)}>
-                {pedido.estadoPago === "por-verificar" ? "VERIFICANDO" : pedido.estadoPago.toUpperCase()}
+                {pedido.estadoPago === "por-verificar" ? "VERIFICANDO" : (pedido.estadoPago || "pendiente").toUpperCase()}
               </EstadoBadge>
             </EstadosContainer>
 
@@ -264,7 +301,7 @@ export function PanelPedidos() {
             </AccionesContainer>
 
             <TimeInfo>
-              <FiClock /> {new Date(pedido.fecha).toLocaleString('es-PE')}
+              <FiClock /> {pedido.fecha ? new Date(pedido.fecha).toLocaleString('es-PE') : "Fecha no disponible"}
             </TimeInfo>
           </PedidoCard>
         ))}
@@ -275,7 +312,7 @@ export function PanelPedidos() {
         <Modal onClick={() => setShowModal(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
-              <h2>Pedido #{selectedPedido.numeroOrden}</h2>
+              <h2>Pedido #{selectedPedido.numeroOrden || selectedPedido.id}</h2>
               <CloseButton onClick={() => setShowModal(false)}>
                 <FiX />
               </CloseButton>
@@ -284,13 +321,13 @@ export function PanelPedidos() {
             <ModalBody>
               <Section>
                 <SectionTitle>Cliente</SectionTitle>
-                <p><strong>{selectedPedido.cliente.nombre}</strong></p>
-                <p>Tel: {selectedPedido.cliente.telefono}</p>
+                <p><strong>{selectedPedido.cliente?.nombre || "No especificado"}</strong></p>
+                <p>Tel: {selectedPedido.cliente?.telefono || "No especificado"}</p>
                 {selectedPedido.tipoEntrega === "delivery" && (
                   <>
-                    <p>Dirección: {selectedPedido.cliente.direccion}</p>
-                    <p>Distrito: {selectedPedido.cliente.distrito}</p>
-                    {selectedPedido.cliente.referencia && (
+                    <p>Dirección: {selectedPedido.cliente?.direccion || "No especificado"}</p>
+                    <p>Distrito: {selectedPedido.cliente?.distrito || "No especificado"}</p>
+                    {selectedPedido.cliente?.referencia && (
                       <p>Referencia: {selectedPedido.cliente.referencia}</p>
                     )}
                   </>
@@ -300,16 +337,16 @@ export function PanelPedidos() {
               <Section>
                 <SectionTitle>Productos</SectionTitle>
                 <ProductList>
-                  {selectedPedido.productos.map((producto, index) => (
+                  {(selectedPedido.productos || []).map((producto, index) => (
                     <ProductItem key={index}>
                       <span>{producto.nombre} x{producto.cantidad}</span>
-                      <span>S/ {producto.subtotal.toFixed(2)}</span>
+                      <span>S/ {(producto.subtotal || 0).toFixed(2)}</span>
                     </ProductItem>
                   ))}
                 </ProductList>
                 <TotalRow>
                   <strong>Subtotal:</strong>
-                  <strong>S/ {selectedPedido.subtotal.toFixed(2)}</strong>
+                  <strong>S/ {(selectedPedido.subtotal || 0).toFixed(2)}</strong>
                 </TotalRow>
                 {selectedPedido.costoDelivery > 0 && (
                   <TotalRow>
@@ -319,15 +356,15 @@ export function PanelPedidos() {
                 )}
                 <TotalRow final>
                   <strong>Total:</strong>
-                  <strong>S/ {selectedPedido.total.toFixed(2)}</strong>
+                  <strong>S/ {(selectedPedido.total || 0).toFixed(2)}</strong>
                 </TotalRow>
               </Section>
 
               <Section>
                 <SectionTitle>Información de Pago</SectionTitle>
-                <p>Método: <strong>{selectedPedido.metodoPago}</strong></p>
+                <p>Método: <strong>{selectedPedido.metodoPago || "No especificado"}</strong></p>
                 <p>Estado: <EstadoBadge small color={getEstadoPagoColor(selectedPedido.estadoPago)}>
-                  {selectedPedido.estadoPago}
+                  {selectedPedido.estadoPago || "pendiente"}
                 </EstadoBadge></p>
                 {selectedPedido.codigoOperacion && (
                   <p>Código: <strong>{selectedPedido.codigoOperacion}</strong></p>
@@ -731,4 +768,13 @@ const ModalButton = styled.button`
     opacity: 0.9;
     transform: translateY(-2px);
   }
+`;
+const LoadingContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: ${({ theme }) => theme.text};
 `;
