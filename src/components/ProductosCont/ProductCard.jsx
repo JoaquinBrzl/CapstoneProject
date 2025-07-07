@@ -6,7 +6,6 @@ export function ProductCard({ producto }) {
   const { addToCart } = useCart();
   const agregarAlCarrito = () => {
     addToCart(producto);
-    alert(`${producto.nombre} agregado al carrito!`);
   };
   return (
     <Container>

@@ -7,6 +7,8 @@ import { v } from "../styles/Variables"; // Variables de estilo
 import { AiOutlineLeft } from "react-icons/ai";
 import { MdLogout, MdLogin } from "react-icons/md";
 import { BiSolidDonateHeart } from "react-icons/bi";
+import { BiSolidReport } from "react-icons/bi";
+import { FaShopLock } from "react-icons/fa6";
 import {
   FaStore,
   FaHome,
@@ -55,7 +57,8 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
     badge: itemCount
   },
   { label: "Donaciones", icon: <BiSolidDonateHeart />, to: "/donaciones" },
-  { label: "Ayudas", icon: <FaHandsHelping />, to: "/reportes" },
+  { label: "Ayudas", icon: <BiSolidReport />, to: "/reportes" },
+  { label: "PanelPedidos", icon: <FaShopLock />, to: "/panelPedidos" }
 ];
 
 

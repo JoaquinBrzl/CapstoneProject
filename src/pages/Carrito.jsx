@@ -1,22 +1,28 @@
-import React, { useState } from 'react'; // Agregar React y useState
+// ARCHIVO: src/pages/Carrito.jsx
+// REEMPLAZA TODO EL CONTENIDO DEL ARCHIVO CON ESTO:
+
+import React, { useState } from 'react';
 import styled from "styled-components";
 import { useCart } from "../context/CartContext";
 import { FiMinus, FiPlus, FiTrash2, FiShoppingCart, FiFileText } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import jsPDF from "jspdf"; // Quitar las llaves
+import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { BiSolidDonateHeart } from "react-icons/bi";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { ModalEdicion } from "../components/CRUD/ModalEdicion";
+import { ModalCheckout } from "../components/Checkout/ModalCheckout";
 import Swal from "sweetalert2";
+import { registrarVenta } from "../utils/registrarVenta";
 
 export function Carrito() {
-  const { cartItems, updateQuantity, removeFromCart, getTotal, clearCart } = useCart(); // Agregar clearCart
+  const { cartItems, updateQuantity, removeFromCart, getTotal, clearCart } = useCart();
   const navigate = useNavigate();
   
-  // Estados para el modal de donación
+  // Estados para los modales
   const [showDonationModal, setShowDonationModal] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [donacionData, setDonacionData] = useState({
     nombre: "",
     dni: "",
@@ -27,24 +33,21 @@ export function Carrito() {
 
   // Función para preparar los datos de donación cuando se abre el modal
   const handleOpenDonationModal = () => {
-    // Preparar el resumen de productos para el campo "donativo"
     const resumenProductos = cartItems
       .map((item) => `${item.nombre} (x${item.cantidad})`)
       .join(", ");
 
-    // Calcular cantidad total
     const cantidadTotal = cartItems.reduce(
       (sum, item) => sum + item.cantidad,
       0
     );
 
-    // Establecer los datos iniciales del modal
     setDonacionData({
       nombre: "",
       dni: "",
-      ciudad: "Lima", // Ciudad por defecto
-      donativo: resumenProductos, // Lista de productos
-      cantidad: `${cantidadTotal} unidades`, // Cantidad total
+      ciudad: "Lima",
+      donativo: resumenProductos,
+      cantidad: `${cantidadTotal} unidades`,
     });
 
     setShowDonationModal(true);
@@ -53,7 +56,6 @@ export function Carrito() {
   // Función para guardar la donación
   const handleSaveDonation = async (formData) => {
     try {
-      // Mostrar loading
       Swal.fire({
         title: "Procesando donación...",
         text: "Por favor espere",
@@ -64,25 +66,19 @@ export function Carrito() {
         },
       });
 
-      // Preparar datos adicionales para la donación
       const donacionCompleta = {
         ...formData,
-        complete: false, // Estado inicial pendiente
+        complete: false,
         fechaDonacion: new Date().toISOString(),
-        productos: cartItems, // Guardar también el detalle de productos
-        valorEstimado: getTotal(), // Valor estimado de la donación
+        productos: cartItems,
+        valorEstimado: getTotal(),
       };
 
-      // Guardar en Firebase
       await addDoc(collection(db, "donaciones"), donacionCompleta);
 
-      // Limpiar carrito
       clearCart();
-
-      // Cerrar modal
       setShowDonationModal(false);
 
-      // Mostrar mensaje de éxito
       Swal.fire({
         icon: "success",
         title: "¡Donación registrada!",
@@ -107,8 +103,8 @@ export function Carrito() {
     }
   };
 
-  // ------------------------------------
-  const generarPDF = () => {
+  // Función para generar PDF
+  const generarPDF = async (datosVenta = null) => {
     if (cartItems.length === 0) {
       alert("Tu carrito está vacío. Agrega productos para generar la orden.");
       return;
@@ -117,8 +113,8 @@ export function Carrito() {
     const doc = new jsPDF();
 
     /* === Definición de colores corporativos === */
-    const primaryColor = [51, 51, 51]; // Gris oscuro
-    const secondaryColor = [231, 76, 60]; // Rojo
+    const primaryColor = [51, 51, 51];
+    const secondaryColor = [231, 76, 60];
     const lightGray = [245, 245, 245];
 
     /* === HEADER === */
@@ -141,13 +137,13 @@ export function Carrito() {
 
     /* === INFORMACIÓN DE LA ORDEN === */
     doc.setFillColor(...lightGray);
-    doc.roundedRect(15, 55, 180, 25, 3, 3, "F");
+    doc.roundedRect(15, 55, 180, 35, 3, 3, "F");
 
     doc.setTextColor(...primaryColor);
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
 
-    const ordenNumero = `ORD-${Date.now().toString().slice(-8)}`;
+    const ordenNumero = datosVenta?.numeroOrden || `ORD-${Date.now().toString().slice(-8)}`;
     const fecha = new Date().toLocaleDateString("es-PE", {
       weekday: "long",
       year: "numeric",
@@ -162,12 +158,24 @@ export function Carrito() {
     doc.text(`N° de Orden: ${ordenNumero}`, 25, 65);
     doc.text(`Fecha: ${fecha}`, 25, 72);
     doc.text(`Hora: ${hora}`, 140, 72);
+    
+    // Agregar información del cliente si existe
+    if (datosVenta?.cliente) {
+      doc.text(`Cliente: ${datosVenta.cliente.nombre}`, 25, 79);
+      doc.text(`Tel: ${datosVenta.cliente.telefono}`, 140, 79);
+      
+      if (datosVenta.tipoEntrega === "delivery") {
+        doc.text(`Dirección: ${datosVenta.cliente.direccion}, ${datosVenta.cliente.distrito}`, 25, 86);
+      } else {
+        doc.text(`Tipo: RECOJO EN TIENDA`, 25, 86);
+      }
+    }
 
     /* === DETALLE DE PRODUCTOS === */
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...secondaryColor);
-    doc.text("DETALLE DE PRODUCTOS", 15, 92);
+    doc.text("DETALLE DE PRODUCTOS", 15, 102);
 
     const tableData = cartItems.map((item) => {
       const precioConDesc =
@@ -193,7 +201,7 @@ export function Carrito() {
     autoTable(doc, {
       head: [["Producto", "Cant.", "Precio Unit.", "Subtotal"]],
       body: tableData,
-      startY: 98,
+      startY: 108,
       theme: "striped",
       headStyles: {
         fillColor: primaryColor,
@@ -213,7 +221,7 @@ export function Carrito() {
       foot: [
         [
           {
-            content: "TOTAL:",
+            content: "SUBTOTAL:",
             colSpan: 3,
             styles: { halign: "right", fontStyle: "bold" },
           },
@@ -230,14 +238,13 @@ export function Carrito() {
       },
       margin: { left: 15, right: 15 },
 
-      /* === Bloque robusto para dibujar borde === */
       didDrawPage: function (data) {
         const left = data.settings.margin.left || 15;
         const right = data.settings.margin.right || 15;
         const pageW = doc.internal.pageSize.getWidth();
         const width = data.table?.width ?? pageW - left - right;
 
-        const startY = data.table?.startY ?? data.settings.startY ?? 98;
+        const startY = data.table?.startY ?? data.settings.startY ?? 108;
         const endY = data.cursor?.y ?? startY + 10;
 
         doc.setDrawColor(...primaryColor);
@@ -251,30 +258,27 @@ export function Carrito() {
     const resumenY = finalY + 15;
 
     doc.setFillColor(...lightGray);
-    doc.roundedRect(120, resumenY, 75, 40, 3, 3, "F");
+    doc.roundedRect(120, resumenY, 75, 50, 3, 3, "F");
 
     doc.setTextColor(...primaryColor);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
 
     const subtotal = getTotal();
-    const delivery = subtotal >= 50 ? 0 : 5;
-    const totalFinal = subtotal + delivery;
+    const delivery = datosVenta?.costoDelivery || 0;
+    const totalFinal = datosVenta?.total || subtotal;
 
     doc.text("Subtotal:", 125, resumenY + 10);
     doc.text(`S/ ${subtotal.toFixed(2)}`, 185, resumenY + 10, {
       align: "right",
     });
 
-    doc.text("Delivery:", 125, resumenY + 18);
-    doc.text(
-      delivery === 0 ? "GRATIS" : `S/ ${delivery.toFixed(2)}`,
-      185,
-      resumenY + 18,
-      {
+    if (datosVenta?.tipoEntrega === "delivery") {
+      doc.text("Delivery:", 125, resumenY + 18);
+      doc.text(`S/ ${delivery.toFixed(2)}`, 185, resumenY + 18, {
         align: "right",
-      }
-    );
+      });
+    }
 
     doc.setLineWidth(0.5);
     doc.line(125, resumenY + 22, 190, resumenY + 22);
@@ -287,8 +291,18 @@ export function Carrito() {
       align: "right",
     });
 
+    // Método de pago
+    if (datosVenta?.metodoPago) {
+      doc.setTextColor(...primaryColor);
+      doc.setFontSize(10);
+      doc.text("Método:", 125, resumenY + 40);
+      doc.text(datosVenta.metodoPago.toUpperCase(), 185, resumenY + 40, {
+        align: "right",
+      });
+    }
+
     /* === INFORMACIÓN ADICIONAL === */
-    const infoY = resumenY + 50;
+    const infoY = resumenY + 60;
 
     doc.setTextColor(...primaryColor);
     doc.setFontSize(11);
@@ -299,45 +313,51 @@ export function Carrito() {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 100);
 
-    [
-      "✓ Esta orden es válida por 48 horas",
-      "✓ Aceptamos pagos en efectivo, Yape y Plin",
-      "✓ Delivery gratis para compras mayores a S/ 50.00",
-      "✓ Horario: Lun‑Sáb 8:00‑21:00, Dom 9:00‑14:00",
-      "✓ WhatsApp: +51 999 888 777",
-    ].forEach((t, i) => doc.text(t, 20, infoY + 8 + i * 6));
+    // Agregar estado de la venta si se registró
+    if (datosVenta) {
+      doc.setTextColor(...secondaryColor);
+      doc.setFont("helvetica", "bold");
+      doc.text("✓ PEDIDO REGISTRADO EN EL SISTEMA", 20, infoY + 8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100, 100, 100);
+    }
 
-    /* === MÉTODOS DE PAGO === */
-    const pagosY = infoY + 8 + 5 * 6 + 5;
-    doc.setFillColor(250, 250, 250);
-    doc.roundedRect(15, pagosY, 180, 25, 3, 3, "FD");
+    const startY = datosVenta ? infoY + 14 : infoY + 8;
+    const infoTexts = datosVenta?.tipoEntrega === "delivery" 
+      ? [
+          "✓ Tu pedido será entregado en las próximas 2 horas",
+          "✓ Te llamaremos antes de salir a entregar",
+          "✓ Pago contra entrega disponible",
+          "✓ WhatsApp: +51 999 888 777"
+        ]
+      : [
+          "✓ Tu pedido estará listo en 30 minutos",
+          "✓ Presentar DNI al recoger",
+          "✓ Horario: Lun‑Sáb 8:00‑21:00, Dom 9:00‑14:00",
+          "✓ WhatsApp: +51 999 888 777"
+        ];
+    
+    infoTexts.forEach((t, i) => doc.text(t, 20, startY + i * 6));
 
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...primaryColor);
-    doc.text("MÉTODOS DE PAGO DISPONIBLES:", 20, pagosY + 10);
+    /* === ESTADO DEL PEDIDO === */
+    if (datosVenta) {
+      const estadoY = startY + infoTexts.length * 6 + 10;
+      doc.setFillColor(250, 250, 250);
+      doc.roundedRect(15, estadoY, 180, 25, 3, 3, "FD");
 
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      "💵 Efectivo  |  💜 Yape  |  💚 Plin  |  🏦 Transferencia",
-      20,
-      pagosY + 18
-    );
-
-    /* === QR simulado === */
-    if (totalFinal > 0) {
-      doc.setFillColor(255, 255, 255);
-      doc.rect(15, resumenY, 50, 50, "F");
-      doc.setDrawColor(0);
-      doc.rect(15, resumenY, 50, 50, "S");
-
-      doc.setFontSize(8);
-      doc.setTextColor(0);
-      doc.text("Escanea para", 40, resumenY + 20, { align: "center" });
-      doc.text("pagar con Yape", 40, resumenY + 28, { align: "center" });
       doc.setFontSize(10);
-      doc.text("[QR CODE]", 40, resumenY + 38, { align: "center" });
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...primaryColor);
+      doc.text("ESTADO DEL PEDIDO:", 20, estadoY + 10);
+
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      
+      const estado = datosVenta.estadoPago === "efectivo-tienda" 
+        ? "📋 Pendiente de pago en tienda" 
+        : "⏳ En verificación de pago";
+      
+      doc.text(estado, 20, estadoY + 18);
     }
 
     /* === PIE DE PÁGINA === */
@@ -356,7 +376,87 @@ export function Carrito() {
     /* === Descargar PDF === */
     doc.save(`Orden_${ordenNumero}_BodegaKuky.pdf`);
   };
-  // ------------------------------------
+
+  // Función para manejar el checkout
+  const handleCheckoutConfirm = async (datosCheckout) => {
+    try {
+      // Mostrar loading
+      Swal.fire({
+        title: "Procesando pedido...",
+        text: "Por favor espere",
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        willOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      // Registrar la venta
+      const resultadoVenta = await registrarVenta(cartItems, datosCheckout);
+
+      if (resultadoVenta.success) {
+        // Generar PDF con los datos de la venta
+        await generarPDF(resultadoVenta.data);
+
+        // Limpiar carrito
+        clearCart();
+        
+        // Cerrar modal
+        setShowCheckoutModal(false);
+
+        // Mostrar mensaje de éxito según el tipo de pago
+        if (datosCheckout.metodoPago === "efectivo-tienda") {
+          Swal.fire({
+            icon: "success",
+            title: "¡Pedido registrado!",
+            html: `
+              <p><strong>N° de Orden: ${resultadoVenta.numeroOrden}</strong></p>
+              <p>Tu pedido estará listo en 30 minutos</p>
+              <p>Presenta este código al recoger</p>
+            `,
+            confirmButtonText: "Entendido",
+          });
+        } else if (datosCheckout.tipoEntrega === "delivery") {
+          Swal.fire({
+            icon: "success",
+            title: "¡Pedido registrado!",
+            html: `
+              <p><strong>N° de Orden: ${resultadoVenta.numeroOrden}</strong></p>
+              <p>Estamos verificando tu pago</p>
+              <p>Te llamaremos para confirmar la entrega</p>
+            `,
+            confirmButtonText: "Entendido",
+          });
+        } else {
+          Swal.fire({
+            icon: "success",
+            title: "¡Pedido registrado!",
+            html: `
+              <p><strong>N° de Orden: ${resultadoVenta.numeroOrden}</strong></p>
+              <p>Estamos verificando tu pago</p>
+              <p>Tu pedido estará listo en 30 minutos</p>
+            `,
+            confirmButtonText: "Entendido",
+          });
+        }
+
+        // Redirigir después de 3 segundos
+        setTimeout(() => {
+          navigate("/productos");
+        }, 3000);
+
+      } else {
+        throw new Error(resultadoVenta.error);
+      }
+    } catch (error) {
+      console.error("Error al procesar pedido:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo procesar tu pedido. Por favor intenta nuevamente.",
+      });
+    }
+  };
 
   // Función para continuar compra
   const handleContinuarCompra = () => {
@@ -368,23 +468,9 @@ export function Carrito() {
       });
       return;
     }
-    generarPDF();
 
-    setTimeout(() => {
-      Swal.fire({
-        icon: "question",
-        title: "¿Deseas limpiar el carrito?",
-        text: "Se ha generado tu orden de compra",
-        showCancelButton: true,
-        confirmButtonText: "Sí, limpiar",
-        cancelButtonText: "No, mantener",
-      }).then((result) => {
-        if (result.isConfirmed) {
-          clearCart();
-          navigate("/productos");
-        }
-      });
-    }, 1000);
+    // Abrir modal de checkout
+    setShowCheckoutModal(true);
   };
 
   /* === RENDER === */
@@ -431,7 +517,7 @@ export function Carrito() {
                 />
                 <ItemDetails>
                   <ItemName>{item.nombre}</ItemName>
-                  <ItemCategory>{item.categoria.toUpperCase()}</ItemCategory>
+                  <ItemCategory>{item.categoria?.toUpperCase() || "GENERAL"}</ItemCategory>
                   <ItemDescription>{item.descripcion}</ItemDescription>
                   {item.stock && item.stock < 10 && (
                     <StockWarning>Últimas {item.stock} unidades</StockWarning>
@@ -496,7 +582,7 @@ export function Carrito() {
 
           <CheckoutButton onClick={handleContinuarCompra}>
             <FiFileText style={{ marginRight: "8px" }} />
-            Generar Orden (PDF)
+            Completar Compra
           </CheckoutButton>
 
           <DonateButton onClick={handleOpenDonationModal}>
@@ -523,6 +609,14 @@ export function Carrito() {
         handleClose={() => setShowDonationModal(false)}
         donacion={donacionData}
         onSave={handleSaveDonation}
+      />
+
+      {/* Modal de checkout */}
+      <ModalCheckout
+        show={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        onConfirm={handleCheckoutConfirm}
+        total={getTotal()}
       />
     </>
   );

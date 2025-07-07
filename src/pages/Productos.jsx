@@ -1,14 +1,16 @@
 import styled, { keyframes } from "styled-components";
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase";
-import { FiFilter } from "react-icons/fi";
+import { db, auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { FiFilter, FiPlus } from "react-icons/fi";
 import { ProductCard } from "../components/ProductosCont/ProductCard";
 import { SearchBar } from "../components/ProductosCont/SearchBar";
 import { FilterSidebar } from "../components/ProductosCont/FilterSidebar";
+import { AddProducto } from "../components/ProductosCont/AddProducto";
 
 export function Productos() {
-  // Estados primcipales
+  // Estados principales
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busqueda, setBusqueda] = useState("");
@@ -19,6 +21,16 @@ export function Productos() {
     ordenar: "nombre",
   });
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
+  const [mostrarAddProducto, setMostrarAddProducto] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // Verificar si el usuario está logueado
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (userFirebase) => {
+      setUser(userFirebase);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Cargar productos de firebase al montar el componente
   useEffect(() => {
@@ -115,6 +127,12 @@ export function Productos() {
             <FiFilter />
             Filtros
           </FilterButton>
+          {user && (
+            <AddButton onClick={() => setMostrarAddProducto(true)}>
+              <FiPlus />
+              Agregar Producto
+            </AddButton>
+          )}
         </HeaderControls>
       </Header>
 
@@ -163,6 +181,18 @@ export function Productos() {
           )}
         </ProductsSection>
       </ContentWrapper>
+
+      {/* Modal para agregar producto */}
+      {mostrarAddProducto && (
+        <ModalOverlay onClick={() => setMostrarAddProducto(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <AddProducto
+              onClose={() => setMostrarAddProducto(false)}
+              onProductAdded={cargarProductos}
+            />
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Container>
   );
 }
@@ -259,6 +289,28 @@ const FilterButton = styled.button`
   }
 `;
 
+const AddButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: ${({ theme }) => theme.primary || "#3498db"};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: all 0.3s;
+  box-shadow: 0 2px 8px ${({ theme }) => theme.primary || "#3498db"}30;
+
+  &:hover {
+    background: ${({ theme }) => theme.primaryHover || "#2980b9"};
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px ${({ theme }) => theme.primary || "#3498db"}40;
+  }
+`;
+
 const ContentWrapper = styled.div`
   display: flex;
   gap: 20px;
@@ -305,4 +357,25 @@ const NoResultsMessage = styled.div`
 const NoResultsSubtext = styled.div`
   font-size: 16px;
   color: ${({ theme }) => theme.text}60;
+`;
+
+// Estilos del Modal
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: ${fadeIn} 0.3s ease-out;
+`;
+
+const ModalContent = styled.div`
+  animation: ${fadeIn} 0.3s ease-out;
 `;

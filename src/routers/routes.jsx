@@ -6,6 +6,7 @@ import {Donaciones} from "../pages/Donaciones";
 import {Reportes} from "../pages/Reportes";
 import {Login} from "../components/InicioSesion/Login";
 import {Registro} from "../components/InicioSesion/Registro";
+import { PanelPedidos } from "../pages/PanelPedidos";
 
 
 export function MyRouters() {
@@ -18,6 +19,7 @@ export function MyRouters() {
         <Route path="/reportes" element={<Reportes />}/>
         <Route path="/login" element={<Login />}/>
         <Route path="/registro" element={<Registro />}/>
+        <Route path="/panelPedidos" element={<PanelPedidos/>}/>
     </Routes>
   );
 }
