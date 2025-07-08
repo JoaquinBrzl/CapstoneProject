@@ -68,12 +68,6 @@ export function Login() {
             Login
           </button>
           <hr />
-          <p>
-            No tienes cuenta?{" "}
-            <span>
-              <Link to="/registro">Registrate</Link> {/* Link al registro */}
-            </span>
-          </p>
         </div>
       </div>
     </Container>

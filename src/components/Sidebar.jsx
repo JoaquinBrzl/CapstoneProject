@@ -57,8 +57,8 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }) {
     badge: itemCount
   },
   { label: "Donaciones", icon: <BiSolidDonateHeart />, to: "/donaciones" },
-  { label: "Ayudas", icon: <BiSolidReport />, to: "/reportes" },
-  { label: "PanelPedidos", icon: <FaShopLock />, to: "/panelPedidos" }
+  { label: "Metricas", icon: <BiSolidReport />, to: "/reportes" },
+  { label: "Pedidos / Ventas", icon: <FaShopLock />, to: "/panelPedidos" }
 ];
 
 

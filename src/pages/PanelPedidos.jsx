@@ -21,157 +21,98 @@ export function PanelPedidos() {
     const unsubscribe = onAuthStateChanged(auth, (userFirebase) => {
       setUser(userFirebase);
       setLoading(false);
-      if (!userFirebase) {
-        navigate("/login");
-      }
     });
     return () => unsubscribe();
-  }, [navigate]);
+  }, []);
 
   // Escuchar cambios en pedidos en tiempo real
   useEffect(() => {
-    if (!user) return;
+    const q = query(collection(db, "ventas"), orderBy("fecha", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const pedidosData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPedidos(pedidosData);
 
-    try {
-      const q = query(
-        collection(db, "ventas"),
-        orderBy("fecha", "desc")
-      );
+      const nuevosNoVistos = pedidosData.filter(p => !p.visto && p.estadoPedido === "nuevo");
+      if (nuevosNoVistos.length > 0) playNotificationSound();
+    });
+    return () => unsubscribe();
+  }, []);
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        try {
-          const pedidosData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          
-          setPedidos(pedidosData);
-          
-          // Reproducir sonido si hay pedidos nuevos no vistos
-          const nuevosNoVistos = pedidosData.filter(p => !p.visto && p.estadoPedido === "nuevo");
-          if (nuevosNoVistos.length > 0) {
-            playNotificationSound();
-          }
-        } catch (error) {
-          console.error("Error procesando pedidos:", error);
-        }
-      }, (error) => {
-        console.error("Error en onSnapshot:", error);
-      });
-
-      return () => unsubscribe();
-    } catch (error) {
-      console.error("Error configurando listener:", error);
-    }
-  }, [user]);
-
-  // Función para reproducir sonido de notificación (mejorada)
   const playNotificationSound = () => {
     try {
-      // Crear un beep simple usando Web Audio API
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
-      
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
       oscillator.frequency.value = 800;
       oscillator.type = 'sine';
-      
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
-    } catch (error) {
-      console.log("No se pudo reproducir el sonido:", error);
+    } catch (e) {
+      console.log("No se pudo reproducir el sonido:", e);
     }
   };
 
-  // Marcar pedido como visto
   const marcarComoVisto = async (pedidoId) => {
     try {
       await updateDoc(doc(db, "ventas", pedidoId), {
         visto: true,
-        "timestamps.visto": new Date().toISOString()
+        "timestamps.visto": new Date().toISOString(),
       });
-    } catch (error) {
-      console.error("Error al marcar como visto:", error);
+    } catch (e) {
+      console.error("Error al marcar como visto:", e);
     }
   };
 
-  // Cambiar estado del pedido
   const cambiarEstadoPedido = async (pedidoId, nuevoEstado) => {
+    if (!user) return;
     try {
       const updates = {
         estadoPedido: nuevoEstado,
-        "timestamps.actualizado": new Date().toISOString()
+        "timestamps.actualizado": new Date().toISOString(),
       };
-
-      if (nuevoEstado === "preparando") {
-        updates.preparado = false;
-      } else if (nuevoEstado === "listo") {
-        updates.preparado = true;
-      } else if (nuevoEstado === "entregado") {
-        updates.entregado = true;
-      }
-
+      if (nuevoEstado === "preparando") updates.preparado = false;
+      if (nuevoEstado === "listo") updates.preparado = true;
+      if (nuevoEstado === "entregado") updates.entregado = true;
       await updateDoc(doc(db, "ventas", pedidoId), updates);
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Estado actualizado',
-        text: `El pedido ahora está: ${nuevoEstado}`,
-        timer: 2000,
-        showConfirmButton: false
-      });
-    } catch (error) {
-      console.error("Error al cambiar estado:", error);
+      Swal.fire({ icon: 'success', title: 'Estado actualizado', text: `El pedido ahora está: ${nuevoEstado}`, timer: 2000, showConfirmButton: false });
+    } catch (e) {
+      console.error("Error al cambiar estado:", e);
       Swal.fire('Error', 'No se pudo cambiar el estado', 'error');
     }
   };
 
-  // Cambiar estado del pago
   const cambiarEstadoPago = async (pedidoId, nuevoEstado) => {
+    if (!user) return;
     try {
       await updateDoc(doc(db, "ventas", pedidoId), {
         estadoPago: nuevoEstado,
-        "timestamps.pagado": nuevoEstado === "pagado" ? new Date().toISOString() : null
+        "timestamps.pagado": nuevoEstado === "pagado" ? new Date().toISOString() : null,
       });
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Pago actualizado',
-        text: nuevoEstado === "pagado" ? "Pago confirmado" : "Estado de pago actualizado",
-        timer: 2000,
-        showConfirmButton: false
-      });
-    } catch (error) {
-      console.error("Error al cambiar estado de pago:", error);
+      Swal.fire({ icon: 'success', title: 'Pago actualizado', text: nuevoEstado === "pagado" ? "Pago confirmado" : "Estado de pago actualizado", timer: 2000, showConfirmButton: false });
+    } catch (e) {
+      console.error("Error al cambiar estado de pago:", e);
       Swal.fire('Error', 'No se pudo actualizar el pago', 'error');
     }
   };
 
-  // Ver detalles del pedido
   const verDetalles = (pedido) => {
     setSelectedPedido(pedido);
     setShowModal(true);
-    if (!pedido.visto) {
-      marcarComoVisto(pedido.id);
-    }
+    if (!pedido.visto && user) marcarComoVisto(pedido.id);
   };
 
-  // Filtrar pedidos
-  const pedidosFiltrados = pedidos.filter(pedido => {
+  const pedidosFiltrados = pedidos.filter(p => {
     if (filtro === "todos") return true;
-    if (filtro === "nuevos") return pedido.estadoPedido === "nuevo";
-    if (filtro === "preparando") return pedido.estadoPedido === "preparando";
-    if (filtro === "listos") return pedido.estadoPedido === "listo";
+    if (filtro === "nuevos") return p.estadoPedido === "nuevo";
+    if (filtro === "preparando") return p.estadoPedido === "preparando";
+    if (filtro === "listos") return p.estadoPedido === "listo";
     return true;
   });
 
-  // Obtener color según estado
   const getEstadoColor = (estado) => {
     switch (estado) {
       case "nuevo": return "#e74c3c";
@@ -191,20 +132,11 @@ export function PanelPedidos() {
     }
   };
 
-  if (loading) {
-    return (
-      <LoadingContainer>
-        <div>Cargando...</div>
-      </LoadingContainer>
-    );
-  }
-
-  if (!user) {
-    return null;
-  }
+  if (loading) return <div>Cargando...</div>;
 
   return (
-    <Container>
+    <div>
+      <Container>
       <Header>
         <Title>Panel de Pedidos</Title>
         <Stats>
@@ -251,7 +183,8 @@ export function PanelPedidos() {
 
             <ClienteInfo>
               <h4>{pedido.cliente?.nombre || "Cliente no especificado"}</h4>
-              <p><FiPhone /> {pedido.cliente?.telefono || "No especificado"}</p>
+              {user ? <p><FiPhone /> {pedido.cliente?.telefono}</p> : <p><FiPhone /> Información protegida</p>}
+
               {pedido.tipoEntrega === "delivery" && (
                 <p><FiMapPin /> {pedido.cliente?.direccion || "No especificado"}, {pedido.cliente?.distrito || ""}</p>
               )}
@@ -276,10 +209,12 @@ export function PanelPedidos() {
               </EstadoBadge>
             </EstadosContainer>
 
+              {user && (
             <AccionesContainer>
               <AccionButton onClick={() => verDetalles(pedido)}>
                 <FiEye /> Ver
               </AccionButton>
+              
               
               {pedido.estadoPedido === "nuevo" && (
                 <AccionButton 
@@ -290,6 +225,7 @@ export function PanelPedidos() {
                 </AccionButton>
               )}
               
+              
               {pedido.estadoPedido === "preparando" && (
                 <AccionButton 
                   success
@@ -298,7 +234,9 @@ export function PanelPedidos() {
                   Listo
                 </AccionButton>
               )}
+              
             </AccionesContainer>
+            )}
 
             <TimeInfo>
               <FiClock /> {pedido.fecha ? new Date(pedido.fecha).toLocaleString('es-PE') : "Fecha no disponible"}
@@ -401,6 +339,7 @@ export function PanelPedidos() {
         </Modal>
       )}
     </Container>
+    </div>
   );
 }
 

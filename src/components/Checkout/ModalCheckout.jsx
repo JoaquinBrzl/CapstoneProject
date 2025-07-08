@@ -3,6 +3,8 @@ import styled from "styled-components";
 import { useState } from "react";
 import { FiX, FiHome, FiTruck, FiCamera, FiDollarSign } from "react-icons/fi";
 import Swal from "sweetalert2";
+import yapeQR from "../../assets/yape.jpeg";
+import plinQR from "../../assets/plin.jpeg";
 
 export function ModalCheckout({ show, onClose, onConfirm, total }) {
   const [step, setStep] = useState(1); // 1: tipo entrega, 2: datos, 3: pago
@@ -288,17 +290,18 @@ export function ModalCheckout({ show, onClose, onConfirm, total }) {
                   {metodoPago === "yape" && (
                     <InstructionBox>
                       <p>1. Abre tu app de Yape</p>
-                      <p>2. Escanea el QR o yapea al: <strong>999 888 777</strong></p>
+                      <p>2. Escanea el QR o yapea al: <strong>913 935 178</strong></p>
                       <p>3. Monto a pagar: <strong>S/ {calcularTotalConDelivery().toFixed(2)}</strong></p>
-                      <QRPlaceholder>[QR Code Aquí]</QRPlaceholder>
+                      <QRPlaceholder><img src={yapeQR} width="130px" /></QRPlaceholder>
                     </InstructionBox>
                   )}
                   
                   {metodoPago === "plin" && (
                     <InstructionBox>
                       <p>1. Abre tu app bancaria</p>
-                      <p>2. Busca Plin al número: <strong>999 888 777</strong></p>
+                      <p>2. Busca Plin al número: <strong>913 935 178</strong></p>
                       <p>3. Monto a pagar: <strong>S/ {calcularTotalConDelivery().toFixed(2)}</strong></p>
+                      <QRPlaceholder><img src={plinQR} width="170px" /></QRPlaceholder>
                     </InstructionBox>
                   )}
 

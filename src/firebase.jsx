@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDNbiqFmkN5c4vhaEQvTwyijZAUTGW06DU",
   authDomain: "bodegakuky-fff7f.firebaseapp.com",
   projectId: "bodegakuky-fff7f",
-  storageBucket: "bodegakuky-fff7f.firebasestorage.app",
+  storageBucket: "bodegakuky-fff7f.firebasestorage.googleapis.com",
   messagingSenderId: "126457203747",
   appId: "1:126457203747:web:69bb17dc0dad0ee72cb596",
 };
